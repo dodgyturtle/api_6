@@ -38,10 +38,13 @@ def get_image_name(image_link: str) -> str:
 def main():
     requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
     xkcd_json_link = "https://xkcd.com/info.0.json"
-    response_from_link = get_response_from_link(xkcd_json_link)
-    xkcd_image_link = response_from_link.json()["img"]
+    response_json = get_response_from_link(xkcd_json_link)
+    content_json = response_json.json()
+    xkcd_image_link = content_json["img"]
     xkcd_image_name = get_image_name(xkcd_image_link)
-    print(download_image(xkcd_image_link, xkcd_image_name))
+    xkcd_comment = content_json["alt"]
+    filepath = download_image(xkcd_image_link, xkcd_image_name)
+    print(filepath, xkcd_comment)
 
 
 if __name__ == "__main__":
