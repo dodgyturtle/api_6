@@ -7,12 +7,26 @@ import requests
 from dotenv import load_dotenv
 from pathvalidate import sanitize_filename, sanitize_filepath
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
+from random import randrange
+
+
+def fetch_random_comic(comic_current_link: str) -> Dict:
+    comic_current_response = fetch_response(comic_current_link)
+    comic_current_content = comic_current_response.json()
+    comic_last_number = comic_current_content["num"]
+    comic_random_number = randrange(1, comic_last_number)
+    comic_random_link = f"http://xkcd.com/{ comic_random_number }/info.0.json"
+    comic_random_response = fetch_response(comic_random_link)
+    comic_random_content = comic_random_response.json()
+    return {
+        "img": comic_random_content["img"],
+        "title": comic_random_content["title"],
+        "comment": comic_random_content["alt"],
+    }
 
 
 def fetch_response(link: str, params: dict = {}) -> requests.models.Response:
-    link_response = requests.get(
-        link, verify=False, params=params, allow_redirects=False
-    )
+    link_response = requests.get(link, verify=False, params=params)
     link_response.raise_for_status()
     return link_response
 
@@ -81,7 +95,7 @@ def publish_image_to_wall_vk_group(
 def main():
     requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
     load_dotenv()
-    xkcd_json_link = "https://xkcd.com/info.0.json"
+    xkcd_current_comic_link = "https://xkcd.com/info.0.json"
 
     vk_get_wall_upload_upload_server_api = (
         "https://api.vk.com/method/photos.getWallUploadServer"
@@ -95,25 +109,20 @@ def main():
         "group_id": vk_group_id,
         "v": "5.130",
     }
-
-    response_json = fetch_response(xkcd_json_link)
-    content_json = response_json.json()
-    xkcd_image_link = content_json["img"]
-    xkcd_comment = content_json["alt"]
-    xkcd_title = content_json["title"]
-    xkcd_image_filepath = download_image(xkcd_image_link)
+    comic_random = fetch_random_comic(xkcd_current_comic_link)
+    comic_image_filepath = download_image(comic_random["img"])
 
     vk_image_upload_url = get_vk_image_upload_url(
         vk_get_wall_upload_upload_server_api, vk_params
     )
     upload_image_params = upload_image_to_wall_vk_group(
-        vk_image_upload_url, xkcd_image_filepath
+        vk_image_upload_url, comic_image_filepath
     )
     save_image_response = save_image_to_wall_vk_group(
         vk_save_wall_photo_api, vk_params, upload_image_params
     )
     publish_image_response = publish_image_to_wall_vk_group(
-        vk_publish_wall_photo_api, vk_params, save_image_response, xkcd_title
+        vk_publish_wall_photo_api, vk_params, save_image_response, comic_random["title"]
     )
     pprint.pprint(publish_image_response)
 
