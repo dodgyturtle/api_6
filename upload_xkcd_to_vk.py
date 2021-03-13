@@ -64,8 +64,11 @@ def upload_image_to_wall_vk_group(api_link: str, image_filepath: str) -> Dict:
         files = {
             "photo": image_file,
         }
-        response_api = requests.post(api_link, files=files)
-        response_api.raise_for_status()
+        try:
+            response_api = requests.post(api_link, files=files)
+            response_api.raise_for_status()
+        finally:
+            os.remove(image_filepath)
     return response_api.json()
 
 
