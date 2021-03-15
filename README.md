@@ -33,7 +33,7 @@ $ python upload_xkcd_to_vk.py
 ```
 # VK
 VK_ACCESS_TOKEN="Your VK Access token"
-VK_GROUP_ID="Your VK Group ID "
+VK_GROUP_ID="Your VK Group ID"
 ```
 ### Цель проекта
 

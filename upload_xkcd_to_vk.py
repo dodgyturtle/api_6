@@ -112,22 +112,26 @@ def main():
         "group_id": vk_group_id,
         "v": "5.130",
     }
-    comic_random = fetch_random_comic(xkcd_current_comic_link)
-    comic_image_filepath = download_image(comic_random["img"])
-
-    vk_image_upload_url = get_vk_image_upload_url(
-        vk_get_wall_upload_upload_server_api, vk_params
-    )
-    upload_image_params = upload_image_to_wall_vk_group(
-        vk_image_upload_url, comic_image_filepath
-    )
-    save_image_response = save_image_to_wall_vk_group(
-        vk_save_wall_photo_api, vk_params, upload_image_params
-    )
-    publish_image_response = publish_image_to_wall_vk_group(
-        vk_publish_wall_photo_api, vk_params, save_image_response, comic_random["title"]
-    )
-    pprint.pprint(publish_image_response)
+    try:
+        comic_random = fetch_random_comic(xkcd_current_comic_link)
+        comic_image_filepath = download_image(comic_random["img"])
+        vk_image_upload_url = get_vk_image_upload_url(
+            vk_get_wall_upload_upload_server_api, vk_params
+        )
+        upload_image_params = upload_image_to_wall_vk_group(
+            vk_image_upload_url, comic_image_filepath
+        )
+        save_image_response = save_image_to_wall_vk_group(
+            vk_save_wall_photo_api, vk_params, upload_image_params
+        )
+        publish_image_response = publish_image_to_wall_vk_group(
+            vk_publish_wall_photo_api, vk_params, save_image_response, comic_random["title"]
+        )
+    except (
+            requests.exceptions.ConnectionError,
+            requests.exceptions.HTTPError,
+        ) as error:
+            print(f"Произошла ошибка: { error }")
 
 
 if __name__ == "__main__":
