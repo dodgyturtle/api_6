@@ -18,11 +18,7 @@ def fetch_random_comic(comic_current_link: str) -> Dict:
     comic_random_link = f"http://xkcd.com/{ comic_random_number }/info.0.json"
     comic_random_response = fetch_response(comic_random_link)
     comic_random_content = comic_random_response.json()
-    return {
-        "img": comic_random_content["img"],
-        "title": comic_random_content["title"],
-        "comment": comic_random_content["alt"],
-    }
+    return comic_random_content["img"], comic_random_content["title"]
 
 
 def fetch_response(link: str, params: dict = {}) -> requests.models.Response:
@@ -75,6 +71,7 @@ def upload_image_to_wall_vk_group(api_link: str, image_filepath: str) -> Dict:
 def save_image_to_wall_vk_group(
     api_link: str, params: dict, upload_image_params: dict
 ) -> Dict:
+    save_image_params = {}
     save_image_params.update(upload_image_params)
     save_image_params.update(params)
     response_api = requests.post(api_link, params=save_image_params)
@@ -83,14 +80,13 @@ def save_image_to_wall_vk_group(
 
 
 def publish_image_to_wall_vk_group(
-    api_link: str, params: dict, save_image_response: dict, message: str
+    api_link: str, params: dict, owner_id: str, media_id: str, message: str
 ) -> Dict:
-    owner_id = save_image_response["response"][0].get("owner_id")
-    media_id = save_image_response["response"][0].get("id")
-    publish_image_params = {"from_group": "1",
+    publish_image_params = {
+        "from_group": "1",
         "message": message,
         "attachments": f"photo{ owner_id }_{ media_id }",
-        "owner_id"]: f"-{ params['group_id'] }",
+        "owner_id": f"-{ params['group_id'] }",
     }
     publish_image_params.update(params)
     response_api = requests.post(api_link, params=publish_image_params)
@@ -116,8 +112,8 @@ def main():
         "v": "5.130",
     }
     try:
-        comic_random = fetch_random_comic(xkcd_current_comic_link)
-        comic_image_filepath = download_image(comic_random["img"])
+        comic_img, comic_title = fetch_random_comic(xkcd_current_comic_link)
+        comic_image_filepath = download_image(comic_img)
         vk_image_upload_url = get_vk_image_upload_url(
             vk_get_wall_upload_upload_server_api, vk_params
         )
@@ -127,14 +123,20 @@ def main():
         save_image_response = save_image_to_wall_vk_group(
             vk_save_wall_photo_api, vk_params, upload_image_params
         )
+        owner_id = save_image_response["response"][0].get("owner_id")
+        media_id = save_image_response["response"][0].get("id")
         publish_image_response = publish_image_to_wall_vk_group(
-            vk_publish_wall_photo_api, vk_params, save_image_response, comic_random["title"]
+            vk_publish_wall_photo_api,
+            vk_params,
+            owner_id,
+            media_id,
+            comic_title,
         )
     except (
-            requests.exceptions.ConnectionError,
-            requests.exceptions.HTTPError,
-        ) as error:
-            print(f"Произошла ошибка: { error }")
+        requests.exceptions.ConnectionError,
+        requests.exceptions.HTTPError,
+    ) as error:
+        print(f"Произошла ошибка: { error }")
 
 
 if __name__ == "__main__":
