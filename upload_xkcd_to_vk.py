@@ -75,8 +75,9 @@ def upload_image_to_wall_vk_group(api_link: str, image_filepath: str) -> Dict:
 def save_image_to_wall_vk_group(
     api_link: str, params: dict, upload_image_params: dict
 ) -> Dict:
-    params.update(upload_image_params)
-    response_api = requests.post(api_link, params=params)
+    save_image_params.update(upload_image_params)
+    save_image_params.update(params)
+    response_api = requests.post(api_link, params=save_image_params)
     response_api.raise_for_status()
     return response_api.json()
 
@@ -86,11 +87,13 @@ def publish_image_to_wall_vk_group(
 ) -> Dict:
     owner_id = save_image_response["response"][0].get("owner_id")
     media_id = save_image_response["response"][0].get("id")
-    params["from_group"] = "1"
-    params["message"] = message
-    params["attachments"] = f"photo{ owner_id }_{ media_id }"
-    params["owner_id"] = f"-{ params['group_id'] }"
-    response_api = requests.post(api_link, params=params)
+    publish_image_params = {"from_group": "1",
+        "message": message,
+        "attachments": f"photo{ owner_id }_{ media_id }",
+        "owner_id"]: f"-{ params['group_id'] }",
+    }
+    publish_image_params.update(params)
+    response_api = requests.post(api_link, params=publish_image_params)
     response_api.raise_for_status()
     return response_api.json()
 
