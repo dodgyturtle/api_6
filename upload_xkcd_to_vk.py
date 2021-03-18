@@ -1,5 +1,4 @@
 import os
-import pprint
 from typing import Dict, List
 from urllib.parse import unquote, urlsplit
 
@@ -11,14 +10,14 @@ from random import randrange
 
 
 def fetch_random_comic(comic_current_link: str) -> Dict:
-    comic_current_response = fetch_response(comic_current_link)
-    comic_current_content = comic_current_response.json()
-    comic_last_number = comic_current_content["num"]
-    comic_random_number = randrange(1, comic_last_number)
-    comic_random_link = f"http://xkcd.com/{ comic_random_number }/info.0.json"
-    comic_random_response = fetch_response(comic_random_link)
-    comic_random_content = comic_random_response.json()
-    return comic_random_content["img"], comic_random_content["title"]
+    current_comic_response = fetch_response(comic_current_link)
+    current_comic_content = current_comic_response.json()
+    comic_last_number = current_comic_content["num"]
+    random_comic_number = randrange(1, comic_last_number)
+    random_comic_link = f"http://xkcd.com/{ random_comic_number }/info.0.json"
+    random_comic_response = fetch_response(random_comic_link)
+    random_comic_content = random_comic_response.json()
+    return random_comic_content["img"], random_comic_content["title"]
 
 
 def fetch_response(link: str, params: dict = {}) -> requests.models.Response:
@@ -50,36 +49,42 @@ def get_image_name(image_link: str) -> str:
 
 
 def get_vk_image_upload_url(api_link: str, params: dict) -> List:
-    response_api = fetch_response(api_link, params=params)
-    content_api = response_api.json()
-    return content_api["response"]["upload_url"]
+    api_response = fetch_response(api_link, params=params)
+    api_content = api_response.json()
+    if "error" in api_content:
+        raise requests.exceptions.HTTPError(api_content["error"])
+    return api_content["response"]["upload_url"]
 
 
-def upload_image_to_wall_vk_group(api_link: str, image_filepath: str) -> Dict:
+def upload_image_to_vk_group_wall(api_link: str, image_filepath: str) -> Dict:
     with open(image_filepath, "rb") as image_file:
         files = {
             "photo": image_file,
         }
         try:
-            response_api = requests.post(api_link, files=files)
-            response_api.raise_for_status()
+            api_response = requests.post(api_link, files=files)
+            api_content = api_response.json()
+            if "error" in api_content:
+                raise requests.exceptions.HTTPError(api_content["error"])
         finally:
             os.remove(image_filepath)
-    return response_api.json()
+    return api_content
 
 
-def save_image_to_wall_vk_group(
+def save_image_to_vk_group_wall(
     api_link: str, params: dict, upload_image_params: dict
 ) -> Dict:
     save_image_params = {}
     save_image_params.update(upload_image_params)
     save_image_params.update(params)
-    response_api = requests.post(api_link, params=save_image_params)
-    response_api.raise_for_status()
-    return response_api.json()
+    api_response = requests.post(api_link, params=save_image_params)
+    api_content = api_response.json()
+    if "error" in api_content:
+        raise requests.exceptions.HTTPError(api_content["error"])
+    return api_content
 
 
-def publish_image_to_wall_vk_group(
+def publish_image_to_vk_group_wall(
     api_link: str, params: dict, owner_id: str, media_id: str, message: str
 ) -> Dict:
     publish_image_params = {
@@ -89,17 +94,16 @@ def publish_image_to_wall_vk_group(
         "owner_id": f"-{ params['group_id'] }",
     }
     publish_image_params.update(params)
-    response_api = requests.post(api_link, params=publish_image_params)
-    response_api.raise_for_status()
-    return response_api.json()
+    api_response = requests.post(api_link, params=publish_image_params)
+    api_response.raise_for_status()
+    return api_response.json()
 
 
 def main():
     requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
     load_dotenv()
     xkcd_current_comic_link = "https://xkcd.com/info.0.json"
-
-    vk_get_wall_upload_upload_server_api = (
+    vk_get_wall_upload_server_api = (
         "https://api.vk.com/method/photos.getWallUploadServer"
     )
     vk_save_wall_photo_api = "https://api.vk.com/method/photos.saveWallPhoto"
@@ -115,21 +119,21 @@ def main():
         comic_img, comic_title = fetch_random_comic(xkcd_current_comic_link)
         comic_image_filepath = download_image(comic_img)
         vk_image_upload_url = get_vk_image_upload_url(
-            vk_get_wall_upload_upload_server_api, vk_params
+            vk_get_wall_upload_server_api, vk_params
         )
-        upload_image_params = upload_image_to_wall_vk_group(
+        vk_upload_image_params = upload_image_to_vk_group_wall(
             vk_image_upload_url, comic_image_filepath
         )
-        save_image_response = save_image_to_wall_vk_group(
-            vk_save_wall_photo_api, vk_params, upload_image_params
+        vk_save_image_response = save_image_to_vk_group_wall(
+            vk_save_wall_photo_api, vk_params, vk_upload_image_params
         )
-        owner_id = save_image_response["response"][0].get("owner_id")
-        media_id = save_image_response["response"][0].get("id")
-        publish_image_response = publish_image_to_wall_vk_group(
+        vk_image_owner_id = vk_save_image_response["response"][0].get("owner_id")
+        vk_image_media_id = vk_save_image_response["response"][0].get("id")
+        publish_image_to_vk_group_wall(
             vk_publish_wall_photo_api,
             vk_params,
-            owner_id,
-            media_id,
+            vk_image_owner_id,
+            vk_image_media_id,
             comic_title,
         )
     except (
