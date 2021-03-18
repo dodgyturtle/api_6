@@ -26,7 +26,11 @@ $ python upload_xkcd_to_vk.py
  - Создать группу согласно [инструкции по созданию групп](https://vk.com/groups?tab=admin).
  - Создать приложение согласно [инструкции на сайте для разработчиков](https://vk.com/dev).
  - Получить личный ключ `access_token` согласно [инструкции](https://vk.com/dev/implicit_flow_user) со следующими правами: photos, groups, wall и offline.
- Пример прав: ![](//dvmn.org/media/test.png)
+ 
+ Пример прав: 
+
+ <img src="https://dvmn.org/media/test.png" width="460" height="336">
+
  - Получить `group_id` согласно [инструкции](https://regvk.com/id/).
 
 Полученные `group_id` и `access_token` необходимо указать в файле `.env`.
