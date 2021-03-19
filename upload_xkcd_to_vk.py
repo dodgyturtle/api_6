@@ -25,7 +25,10 @@ def fetch_response(link: str, params: dict = {}) -> requests.models.Response:
     link_response.raise_for_status()
     return link_response
 
-def validate_vk_api_response(api_answer: dict) -> Optional[requests.exceptions.HTTPError]:
+
+def validate_vk_api_response(
+    api_answer: dict,
+) -> Optional[requests.exceptions.HTTPError]:
     if "error" in api_answer:
         raise requests.exceptions.HTTPError(api_answer["error"])
 
@@ -106,7 +109,7 @@ def main():
     xkcd_current_comic_link = "https://xkcd.com/info.0.json"
     vk_get_wall_upload_server_api = \
         "https://api.vk.com/method/photos.getWallUploadServer"
-    
+
     vk_save_wall_photo_api = "https://api.vk.com/method/photos.saveWallPhoto"
     vk_publish_wall_photo_api = "https://api.vk.com/method/wall.post"
     vk_access_token = os.getenv("VK_ACCESS_TOKEN")
