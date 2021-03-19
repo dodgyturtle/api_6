@@ -1,5 +1,5 @@
 import os
-from typing import Dict, List
+from typing import Any, Dict, List, Optional
 from urllib.parse import unquote, urlsplit
 
 import requests
@@ -9,7 +9,7 @@ from requests.packages.urllib3.exceptions import InsecureRequestWarning
 from random import randrange
 
 
-def fetch_random_comic(comic_current_link: str) -> Dict:
+def fetch_random_comic(comic_current_link: str) -> List[Any]:
     current_comic_response = fetch_response(comic_current_link)
     current_comic_content = current_comic_response.json()
     comic_last_number = current_comic_content["num"]
@@ -24,6 +24,10 @@ def fetch_response(link: str, params: dict = {}) -> requests.models.Response:
     link_response = requests.get(link, verify=False, params=params)
     link_response.raise_for_status()
     return link_response
+
+def validate_vk_api_response(api_answer: dict) -> Optional[requests.exceptions.HTTPError]:
+    if "error" in api_answer:
+        raise requests.exceptions.HTTPError(api_answer["error"])
 
 
 def write_image_to_file(data: bytes, filepath: str) -> str:
@@ -51,8 +55,7 @@ def get_image_name(image_link: str) -> str:
 def get_vk_image_upload_url(api_link: str, params: dict) -> List:
     api_response = fetch_response(api_link, params=params)
     api_content = api_response.json()
-    if "error" in api_content:
-        raise requests.exceptions.HTTPError(api_content["error"])
+    validate_vk_api_response(api_content)
     return api_content["response"]["upload_url"]
 
 
@@ -64,8 +67,7 @@ def upload_image_to_vk_group_wall(api_link: str, image_filepath: str) -> Dict:
         try:
             api_response = requests.post(api_link, files=files)
             api_content = api_response.json()
-            if "error" in api_content:
-                raise requests.exceptions.HTTPError(api_content["error"])
+            validate_vk_api_response(api_content)
         finally:
             os.remove(image_filepath)
     return api_content
@@ -79,8 +81,7 @@ def save_image_to_vk_group_wall(
     save_image_params.update(params)
     api_response = requests.post(api_link, params=save_image_params)
     api_content = api_response.json()
-    if "error" in api_content:
-        raise requests.exceptions.HTTPError(api_content["error"])
+    validate_vk_api_response(api_content)
     return api_content
 
 
@@ -103,9 +104,9 @@ def main():
     requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
     load_dotenv()
     xkcd_current_comic_link = "https://xkcd.com/info.0.json"
-    vk_get_wall_upload_server_api = (
+    vk_get_wall_upload_server_api = \
         "https://api.vk.com/method/photos.getWallUploadServer"
-    )
+    
     vk_save_wall_photo_api = "https://api.vk.com/method/photos.saveWallPhoto"
     vk_publish_wall_photo_api = "https://api.vk.com/method/wall.post"
     vk_access_token = os.getenv("VK_ACCESS_TOKEN")
